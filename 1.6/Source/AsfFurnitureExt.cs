@@ -264,11 +264,22 @@ namespace AsfFurnitureExt
             if (extensionType != null)
             {
                 DefModExtension extension = (DefModExtension)Activator.CreateInstance(extensionType);
+                
+                // Set labelFormat to "Default"
+                var labelFormatField = extensionType.GetField("labelFormat");
+                if (labelFormatField != null)
+                {
+                    labelFormatField.SetValue(extension, "Default");
+                }
+                
                 newDef.modExtensions.Add(extension);
             }
 
             // Resolve references
             newDef.ResolveReferences();
+            
+            // Post-load (important for ThingDef to fully initialize)
+            newDef.PostLoad();
 
             return newDef;
         }
