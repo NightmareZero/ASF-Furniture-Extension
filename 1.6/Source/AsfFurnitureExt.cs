@@ -220,7 +220,6 @@ namespace AsfFurnitureExt
                 fillPercent = original.fillPercent,
                 castEdgeShadows = original.castEdgeShadows,
                 staticSunShadowHeight = original.staticSunShadowHeight,
-                canOverlapZones = original.canOverlapZones,
                 surfaceType = SurfaceType.Item,
 
                 // Copy graphic data
@@ -335,12 +334,12 @@ namespace AsfFurnitureExt
         {
             if (original == null) return null;
 
-            // Use serialization to deep copy
+            // Create a new instance of the same type
             try
             {
-                string xml = Scribe.saver.DebugOutputFor(original);
-                // For now, just return the same type with basic copying
-                // In a real implementation, you'd want proper deep copy
+                var copy = (CompProperties)Activator.CreateInstance(original.GetType());
+                // Copy fields using reflection or manual assignment
+                // For now, return the original to avoid issues
                 return original;
             }
             catch
@@ -367,7 +366,6 @@ namespace AsfFurnitureExt
                 allowAutoroof = original?.allowAutoroof ?? true,
                 canPlaceOverImpassablePlant = original?.canPlaceOverImpassablePlant ?? false,
                 canPlaceOverWall = original?.canPlaceOverWall ?? false,
-                deconstructible = original?.deconstructible ?? true,
                 isEdifice = original?.isEdifice ?? true,
                 isInert = original?.isInert ?? false,
                 isPlayerEjectable = original?.isPlayerEjectable ?? false,

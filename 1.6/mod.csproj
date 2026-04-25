@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net480</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>AsfFurnitureExt</RootNamespace>
+    <AssemblyName>AsfFurnitureExt</AssemblyName>
+    <OutputPath>./Assemblies</OutputPath>
+    <VersionPrefix>1.0.0.0</VersionPrefix>
+    <LangVersion>9.0</LangVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DefineConstants>RELEASE;TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="./Source/*.cs" />
+    <Compile Include="./Source/Defs/*.cs" />
+
+    <Reference Include="../../../RimWorldWin64_Data/Managed/*.dll">
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="../../Harmony/Current/Assemblies/0Harmony.dll" Condition="Exists('../../Harmony/Current/Assemblies/0Harmony.dll')">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="../../Harmony/v1.1/Assemblies/0Harmony.dll" Condition="!Exists('../../Harmony/Current/Assemblies/0Harmony.dll')">
+      <Private>False</Private>
+    </Reference>
+
+    <!-- Adaptive Storage Framework -->
+    <Reference Include="../../Adaptive-Storage-Framework/1.6/Assemblies/AdaptiveStorageFramework.dll" Condition="Exists('../../Adaptive-Storage-Framework/1.6/Assemblies/AdaptiveStorageFramework.dll')">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
