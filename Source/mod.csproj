@@ -29,6 +29,7 @@
 
 	<ItemGroup>
 		<Compile Include="./*.cs" />
+		<Compile Include="./Defs/*.cs" />
 
 		<Reference Include="../../RimWorldWin64_Data/Managed/*.dll">
 			<Private>False</Private>

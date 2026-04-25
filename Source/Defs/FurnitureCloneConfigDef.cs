@@ -7,7 +7,7 @@ namespace AsfFurnitureExt
     /// <summary>
     /// 家具克隆配置定义 - 从XML加载
     /// </summary>
-    public class Def_FurnitureCloneConfig : Def
+    public class FurnitureCloneConfigDef : Def
     {
         // 原版家具defName
         public string originalDefName;

@@ -93,7 +93,7 @@ namespace AsfFurnitureExt
             ls.GapLine();
 
             ls.Label(DefValue.LogMessage("cloned_furniture"));
-            foreach (var config in DefDatabase<Def_FurnitureCloneConfig>.AllDefs)
+            foreach (var config in DefDatabase<FurnitureCloneConfigDef>.AllDefs)
             {
                 if (config.enabled)
                 {
@@ -134,7 +134,7 @@ namespace AsfFurnitureExt
                     Log.Message(DefValue.LogMessage("log_cloning_start"));
 
                     // 从 DefDatabase 加载所有配置
-                    foreach (var config in DefDatabase<Def_FurnitureCloneConfig>.AllDefs)
+                    foreach (var config in DefDatabase<FurnitureCloneConfigDef>.AllDefs)
                     {
                         if (!config.enabled)
                         {
@@ -161,7 +161,7 @@ namespace AsfFurnitureExt
             });
         }
 
-        private static void CloneFurnitureWithStorage(Def_FurnitureCloneConfig config)
+        private static void CloneFurnitureWithStorage(FurnitureCloneConfigDef config)
         {
             ThingDef originalDef = DefDatabase<ThingDef>.GetNamed(config.originalDefName, false);
             if (originalDef == null)
@@ -184,7 +184,7 @@ namespace AsfFurnitureExt
             Log.Message(DefValue.LogMessage("log_cloning_success", newDefName));
         }
 
-        private static ThingDef CopyThingDef(ThingDef original, Def_FurnitureCloneConfig config, string newDefName)
+        private static ThingDef CopyThingDef(ThingDef original, FurnitureCloneConfigDef config, string newDefName)
         {
             // Generate label with prefix
             string newLabel = DefValue.LabelPrefix + original.label;
@@ -349,7 +349,7 @@ namespace AsfFurnitureExt
             }
         }
 
-        private static BuildingProperties CopyBuildingProperties(BuildingProperties original, Def_FurnitureCloneConfig config)
+        private static BuildingProperties CopyBuildingProperties(BuildingProperties original, FurnitureCloneConfigDef config)
         {
             BuildingProperties copy = new BuildingProperties
             {
@@ -385,7 +385,7 @@ namespace AsfFurnitureExt
             return copy;
         }
 
-        private static StorageSettings CreateStorageSettings(Def_FurnitureCloneConfig config)
+        private static StorageSettings CreateStorageSettings(FurnitureCloneConfigDef config)
         {
             StorageSettings settings = new StorageSettings();
             settings.filter = new ThingFilter();
@@ -419,7 +419,7 @@ namespace AsfFurnitureExt
             return settings;
         }
 
-        private static StorageSettings CreateDefaultStorageSettings(Def_FurnitureCloneConfig config)
+        private static StorageSettings CreateDefaultStorageSettings(FurnitureCloneConfigDef config)
         {
             StorageSettings settings = new StorageSettings
             {

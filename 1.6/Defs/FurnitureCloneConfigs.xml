@@ -2,7 +2,7 @@
 <Defs>
 
     <!-- 储物床头柜配置 -->
-    <AsfFurnitureExt.Def_FurnitureCloneConfig>
+    <AsfFurnitureExt.FurnitureCloneConfigDef>
         <defName>Nz_ASFS_EndTable</defName>
         <originalDefName>EndTable</originalDefName>
         <maxItemsInCell>1</maxItemsInCell>
@@ -21,10 +21,10 @@
         </storageDisallowedThingDefs>
         <descriptionSuffixKey>desc_suffix</descriptionSuffixKey>
         <enabled>true</enabled>
-    </AsfFurnitureExt.Def_FurnitureCloneConfig>
+    </AsfFurnitureExt.FurnitureCloneConfigDef>
 
     <!-- 储物梳妆台配置 -->
-    <AsfFurnitureExt.Def_FurnitureCloneConfig>
+    <AsfFurnitureExt.FurnitureCloneConfigDef>
         <defName>Nz_ASFS_Dresser</defName>
         <originalDefName>Dresser</originalDefName>
         <maxItemsInCell>5</maxItemsInCell>
@@ -45,6 +45,6 @@
         </storageDisallowedThingDefs>
         <descriptionSuffixKey>desc_suffix_drawer</descriptionSuffixKey>
         <enabled>true</enabled>
-    </AsfFurnitureExt.Def_FurnitureCloneConfig>
+    </AsfFurnitureExt.FurnitureCloneConfigDef>
 
 </Defs>
