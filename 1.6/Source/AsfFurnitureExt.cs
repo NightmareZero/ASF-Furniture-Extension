@@ -178,8 +178,17 @@ namespace AsfFurnitureExt
             // Create new ThingDef by copying original
             ThingDef newDef = CopyThingDef(originalDef, config, newDefName);
 
-            // Register the new def
-            DefDatabase<ThingDef>.Add(newDef);
+            // Set mod content pack
+            newDef.modContentPack = AsfFurnitureExtMod.Instance.Content;
+
+            // Use DefGenerator to properly register the def (this calls PostLoad and other necessary initialization)
+            DefGenerator.AddImpliedDef<ThingDef>(newDef, false);
+
+            // Also add to BuildableDef database for construction
+            if (!DefDatabase<BuildableDef>.AllDefs.Contains(newDef))
+            {
+                DefDatabase<BuildableDef>.Add(newDef);
+            }
 
             Log.Message(DefValue.LogMessage("log_cloning_success", newDefName));
         }
@@ -264,22 +273,10 @@ namespace AsfFurnitureExt
             if (extensionType != null)
             {
                 DefModExtension extension = (DefModExtension)Activator.CreateInstance(extensionType);
-                
-                // Set labelFormat to "Default"
-                var labelFormatField = extensionType.GetField("labelFormat");
-                if (labelFormatField != null)
-                {
-                    labelFormatField.SetValue(extension, "Default");
-                }
-                
                 newDef.modExtensions.Add(extension);
             }
 
-            // Resolve references
-            newDef.ResolveReferences();
-            
-            // Post-load (important for ThingDef to fully initialize)
-            newDef.PostLoad();
+            // Note: Don't call ResolveReferences() here - DefGenerator.AddImpliedDef will call PostLoad()
 
             return newDef;
         }
