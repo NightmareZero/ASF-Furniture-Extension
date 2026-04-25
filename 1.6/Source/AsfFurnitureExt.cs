@@ -115,6 +115,12 @@ namespace AsfFurnitureExt
     [StaticConstructorOnStartup]
     public static class AsfFurniturePatcher
     {
+        private static readonly string[] AsfAssemblyNames =
+        {
+            "AdaptiveStorageFramework",
+            "AdaptiveStorage"
+        };
+
         static AsfFurniturePatcher()
         {
             Log.Message(DefValue.LogMessage("log_loaded"));
@@ -159,6 +165,29 @@ namespace AsfFurnitureExt
                     Log.Message(DefValue.LogMessage("log_cloning_disabled"));
                 }
             });
+        }
+
+        private static Type ResolveAsfType(string fullTypeName)
+        {
+            foreach (string assemblyName in AsfAssemblyNames)
+            {
+                Type type = Type.GetType(fullTypeName + ", " + assemblyName, false);
+                if (type != null)
+                {
+                    return type;
+                }
+            }
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type type = assembly.GetType(fullTypeName, false);
+                if (type != null)
+                {
+                    return type;
+                }
+            }
+
+            return null;
         }
 
         private static void CloneFurnitureWithStorage(FurnitureCloneConfigDef config)
@@ -230,87 +259,75 @@ namespace AsfFurnitureExt
 
         private static void RegisterGraphicsDef(ThingDef newDef, FurnitureCloneConfigDef config)
         {
-            // Get GraphicsDef type via reflection
-            Type graphicsDefType = Type.GetType("AdaptiveStorage.GraphicsDef, AdaptiveStorage");
-            Type extensionType = Type.GetType("AdaptiveStorage.Extension, AdaptiveStorage");
-            
-            if (graphicsDefType == null || extensionType == null)
+            Type graphicsDefType = ResolveAsfType("AdaptiveStorage.GraphicsDef");
+            if (graphicsDefType == null)
             {
-                Log.Warning("[ASF Furniture Ext] Could not find AdaptiveStorage types");
+                Log.Warning("[ASF Furniture Ext] Could not find AdaptiveStorage.GraphicsDef type");
                 return;
             }
 
             try
             {
-                // Create a new GraphicsDef
                 var graphicsDef = (Def)Activator.CreateInstance(graphicsDefType);
-                
-                // Set defName
+
                 graphicsDefType.GetField("defName")?.SetValue(graphicsDef, newDef.defName + "_Graphics");
-                
-                // Set modContentPack
                 graphicsDefType.GetProperty("modContentPack")?.SetValue(graphicsDef, AsfFurnitureExtMod.Instance.Content);
-                
-                // Get targetDefs list and add newDef
+
+                // Point this GraphicsDef at our cloned ThingDef so Initialize() can
+                // auto-create a StorageGraphic from newDef.graphicData and populate
+                // GraphicsDef.Database[newDef].
                 var targetDefsField = graphicsDefType.GetField("targetDefs");
                 if (targetDefsField != null)
                 {
                     var targetDefs = targetDefsField.GetValue(graphicsDef);
                     if (targetDefs == null)
                     {
-                        var listType = typeof(List<ThingDef>);
-                        targetDefs = Activator.CreateInstance(listType);
+                        targetDefs = Activator.CreateInstance(typeof(List<ThingDef>));
                         targetDefsField.SetValue(graphicsDef, targetDefs);
                     }
-                    
-                    var addMethod = targetDefs.GetType().GetMethod("Add");
-                    addMethod?.Invoke(targetDefs, new object[] { newDef });
+                    targetDefs.GetType().GetMethod("Add")?.Invoke(targetDefs, new object[] { newDef });
                 }
-                
-                // Set showContainedItems to true
-                var showContainedItemsField = graphicsDefType.GetField("showContainedItems");
-                showContainedItemsField?.SetValue(graphicsDef, true);
-                
-                // Register the GraphicsDef
-                DefGenerator.AddImpliedDef(graphicsDef, false);
-                
-                // Add to GraphicsDef.Database
-                var databaseProperty = graphicsDefType.GetProperty("Database");
-                if (databaseProperty != null)
+
+                graphicsDefType.GetField("showContainedItems")?.SetValue(graphicsDef, true);
+
+                // CRITICAL: Must use the correct generic type (GraphicsDef, not Def) so the def is
+                // registered in DefDatabase<GraphicsDef>. ASF's PlayDataLoadingFinished (postfix on
+                // PlayDataLoader.ResetStaticDataPost) clears GraphicsDef.Database and repopulates it
+                // by iterating DefDatabase<GraphicsDef>. If we call DefGenerator.AddImpliedDef with
+                // a compile-time type of Def, it goes into DefDatabase<Def> instead, and our entry
+                // is lost after every save-load cycle (causing the null CurrentGraphic crash).
+                var addImpliedDefMethod = typeof(DefGenerator)
+                    .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                    .FirstOrDefault(m => m.Name == "AddImpliedDef" && m.IsGenericMethodDefinition);
+                if (addImpliedDefMethod != null)
                 {
-                    var database = databaseProperty.GetValue(null);
-                    if (database is System.Collections.IDictionary dict)
-                    {
-                        var graphicsListType = typeof(List<>).MakeGenericType(graphicsDefType);
-                        var graphicsList = System.Activator.CreateInstance(graphicsListType);
-                        var addToListMethod = graphicsListType.GetMethod("Add");
-                        addToListMethod?.Invoke(graphicsList, new object[] { graphicsDef });
-                        dict[newDef] = graphicsList;
-                    }
+                    addImpliedDefMethod.MakeGenericMethod(graphicsDefType)
+                        .Invoke(null, new object[] { graphicsDef, false });
                 }
-                
-                // Now update the Extension to reference this GraphicsDef
-                // Use reflection to get the mod extension
-                var getModExtensionMethod = typeof(Def).GetMethod("GetModExtension", BindingFlags.Instance | BindingFlags.Public);
-                if (getModExtensionMethod != null)
+                else
                 {
-                    var genericMethod = getModExtensionMethod.MakeGenericMethod(extensionType);
-                    var extension = genericMethod.Invoke(newDef, null);
-                    
-                    if (extension != null)
-                    {
-                        var graphicsField = extensionType.GetField("graphics");
-                        if (graphicsField != null)
-                        {
-                            var graphicsListType = typeof(List<>).MakeGenericType(graphicsDefType);
-                            var graphicsList = System.Activator.CreateInstance(graphicsListType);
-                            var addToListMethod = graphicsListType.GetMethod("Add");
-                            addToListMethod?.Invoke(graphicsList, new object[] { graphicsDef });
-                            graphicsField.SetValue(extension, graphicsList);
-                        }
-                    }
+                    // Fallback: add directly to DefDatabase<GraphicsDef>
+                    Log.Warning("[ASF Furniture Ext] DefGenerator.AddImpliedDef not found; using DefDatabase.Add fallback");
+                    typeof(DefDatabase<>).MakeGenericType(graphicsDefType)
+                        .GetMethod("Add", BindingFlags.Static | BindingFlags.Public, null,
+                            new[] { graphicsDefType }, null)
+                        ?.Invoke(null, new object[] { graphicsDef });
                 }
-                
+
+                // ResolveReferences() MUST be called before Initialize() because
+                // Initialize() → UpdateActiveLabelStyle() → ContentsFullyHidden reads
+                // allowedFilter, which is only created inside ResolveReferences().
+                // Without this, Initialize() throws a NullReferenceException (caught
+                // silently), StorageGraphic._worker is never set, CurrentGraphic stays
+                // null, and UpdateBuildingGraphicAtIndex crashes at line 397 every frame.
+                graphicsDefType.GetMethod("ResolveReferences",
+                    BindingFlags.Instance | BindingFlags.Public)?
+                    .Invoke(graphicsDef, null);
+
+                graphicsDefType.GetMethod("Initialize",
+                    BindingFlags.Instance | BindingFlags.Public)?
+                    .Invoke(graphicsDef, null);
+
                 Log.Message($"[ASF Furniture Ext] Registered GraphicsDef for {newDef.defName}");
             }
             catch (Exception ex)
@@ -364,16 +381,17 @@ namespace AsfFurnitureExt
                 newDef.modExtensions = new List<DefModExtension>();
 
             // Create AdaptiveStorage extension via reflection
-            Type extensionType = Type.GetType("AdaptiveStorage.Extension, AdaptiveStorage");
+            Type extensionType = ResolveAsfType("AdaptiveStorage.Extension");
             if (extensionType != null)
             {
                 DefModExtension extension = (DefModExtension)Activator.CreateInstance(extensionType);
                 
-                // Set labelFormat to "Default" (required by AdaptiveStorage)
+                // Set labelFormat to Default using the field's actual enum type.
                 var labelFormatField = extensionType.GetField("labelFormat");
                 if (labelFormatField != null)
                 {
-                    labelFormatField.SetValue(extension, "Default");
+                    object defaultLabelFormat = Enum.Parse(labelFormatField.FieldType, "Default");
+                    labelFormatField.SetValue(extension, defaultLabelFormat);
                 }
                 
                 newDef.modExtensions.Add(extension);
