@@ -181,6 +181,9 @@ namespace AsfFurnitureExt
             // Set mod content pack
             newDef.modContentPack = AsfFurnitureExtMod.Instance.Content;
 
+            // Note: Temporarily disable designator dropdown to test material selection
+            // SetupDesignatorDropdown(originalDef, newDef);
+
             // Use DefGenerator to properly register the def (this calls PostLoad and other necessary initialization)
             DefGenerator.AddImpliedDef<ThingDef>(newDef, false);
 
@@ -190,7 +193,130 @@ namespace AsfFurnitureExt
                 DefDatabase<BuildableDef>.Add(newDef);
             }
 
+            // Register GraphicsDef for AdaptiveStorage
+            RegisterGraphicsDef(newDef, config);
+
+            // Re-resolve designation category to update build menu
+            if (originalDef.designationCategory != null)
+            {
+                originalDef.designationCategory.ResolveReferences();
+            }
+
             Log.Message(DefValue.LogMessage("log_cloning_success", newDefName));
+        }
+
+        private static void SetupDesignatorDropdown(ThingDef originalDef, ThingDef newDef)
+        {
+            // Create or use existing dropdown group
+            if (originalDef.designatorDropdown == null)
+            {
+                var dropdown = new DesignatorDropdownGroupDef
+                {
+                    defName = originalDef.defName + "_ASFS_Group"
+                };
+                
+                // Register the dropdown group def
+                dropdown.modContentPack = AsfFurnitureExtMod.Instance.Content;
+                DefGenerator.AddImpliedDef<DesignatorDropdownGroupDef>(dropdown, false);
+                
+                originalDef.designatorDropdown = dropdown;
+                newDef.designatorDropdown = dropdown;
+            }
+            else
+            {
+                newDef.designatorDropdown = originalDef.designatorDropdown;
+            }
+        }
+
+        private static void RegisterGraphicsDef(ThingDef newDef, FurnitureCloneConfigDef config)
+        {
+            // Get GraphicsDef type via reflection
+            Type graphicsDefType = Type.GetType("AdaptiveStorage.GraphicsDef, AdaptiveStorage");
+            Type extensionType = Type.GetType("AdaptiveStorage.Extension, AdaptiveStorage");
+            
+            if (graphicsDefType == null || extensionType == null)
+            {
+                Log.Warning("[ASF Furniture Ext] Could not find AdaptiveStorage types");
+                return;
+            }
+
+            try
+            {
+                // Create a new GraphicsDef
+                var graphicsDef = (Def)Activator.CreateInstance(graphicsDefType);
+                
+                // Set defName
+                graphicsDefType.GetField("defName")?.SetValue(graphicsDef, newDef.defName + "_Graphics");
+                
+                // Set modContentPack
+                graphicsDefType.GetProperty("modContentPack")?.SetValue(graphicsDef, AsfFurnitureExtMod.Instance.Content);
+                
+                // Get targetDefs list and add newDef
+                var targetDefsField = graphicsDefType.GetField("targetDefs");
+                if (targetDefsField != null)
+                {
+                    var targetDefs = targetDefsField.GetValue(graphicsDef);
+                    if (targetDefs == null)
+                    {
+                        var listType = typeof(List<ThingDef>);
+                        targetDefs = Activator.CreateInstance(listType);
+                        targetDefsField.SetValue(graphicsDef, targetDefs);
+                    }
+                    
+                    var addMethod = targetDefs.GetType().GetMethod("Add");
+                    addMethod?.Invoke(targetDefs, new object[] { newDef });
+                }
+                
+                // Set showContainedItems to true
+                var showContainedItemsField = graphicsDefType.GetField("showContainedItems");
+                showContainedItemsField?.SetValue(graphicsDef, true);
+                
+                // Register the GraphicsDef
+                DefGenerator.AddImpliedDef(graphicsDef, false);
+                
+                // Add to GraphicsDef.Database
+                var databaseProperty = graphicsDefType.GetProperty("Database");
+                if (databaseProperty != null)
+                {
+                    var database = databaseProperty.GetValue(null);
+                    if (database is System.Collections.IDictionary dict)
+                    {
+                        var graphicsListType = typeof(List<>).MakeGenericType(graphicsDefType);
+                        var graphicsList = System.Activator.CreateInstance(graphicsListType);
+                        var addToListMethod = graphicsListType.GetMethod("Add");
+                        addToListMethod?.Invoke(graphicsList, new object[] { graphicsDef });
+                        dict[newDef] = graphicsList;
+                    }
+                }
+                
+                // Now update the Extension to reference this GraphicsDef
+                // Use reflection to get the mod extension
+                var getModExtensionMethod = typeof(Def).GetMethod("GetModExtension", BindingFlags.Instance | BindingFlags.Public);
+                if (getModExtensionMethod != null)
+                {
+                    var genericMethod = getModExtensionMethod.MakeGenericMethod(extensionType);
+                    var extension = genericMethod.Invoke(newDef, null);
+                    
+                    if (extension != null)
+                    {
+                        var graphicsField = extensionType.GetField("graphics");
+                        if (graphicsField != null)
+                        {
+                            var graphicsListType = typeof(List<>).MakeGenericType(graphicsDefType);
+                            var graphicsList = System.Activator.CreateInstance(graphicsListType);
+                            var addToListMethod = graphicsListType.GetMethod("Add");
+                            addToListMethod?.Invoke(graphicsList, new object[] { graphicsDef });
+                            graphicsField.SetValue(extension, graphicsList);
+                        }
+                    }
+                }
+                
+                Log.Message($"[ASF Furniture Ext] Registered GraphicsDef for {newDef.defName}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[ASF Furniture Ext] Failed to register GraphicsDef: {ex}");
+            }
         }
 
         private static ThingDef CopyThingDef(ThingDef original, FurnitureCloneConfigDef config, string newDefName)
@@ -202,52 +328,21 @@ namespace AsfFurnitureExt
             string descriptionSuffix = DefValue.DescSuffix(config.descriptionSuffixKey);
             string newDescription = original.description + descriptionSuffix;
 
-            ThingDef newDef = new ThingDef
-            {
-                defName = newDefName,
-                label = newLabel,
-                description = newDescription,
-
-                // Copy basic properties
-                thingClass = typeof(AdaptiveStorage.ThingClass),
-                category = original.category,
-                tickerType = original.tickerType,
-                altitudeLayer = original.altitudeLayer,
-                useHitPoints = original.useHitPoints,
-                selectable = original.selectable,
-                statBases = CopyStatBases(original.statBases),
-                size = original.size,
-                costStuffCount = original.costStuffCount,
-                stuffCategories = original.stuffCategories?.ToList(),
-                costList = original.costList?.ToList(),
-                researchPrerequisites = original.researchPrerequisites?.ToList(),
-                designationCategory = original.designationCategory,
-                rotatable = original.rotatable,
-                defaultPlacingRot = original.defaultPlacingRot,
-                passability = original.passability,
-                pathCost = original.pathCost,
-                fillPercent = original.fillPercent,
-                castEdgeShadows = original.castEdgeShadows,
-                staticSunShadowHeight = original.staticSunShadowHeight,
-                surfaceType = SurfaceType.Item,
-
-                // Copy graphic data
-                graphicData = CopyGraphicData(original.graphicData),
-                uiIconPath = original.uiIconPath,
-                uiIconScale = original.uiIconScale,
-
-                // Copy comps
-                comps = CopyComps(original.comps),
-
-                // Copy place workers
-                placeWorkers = original.placeWorkers?.ToList(),
-
-                // Copy other properties
-                drawerType = original.drawerType,
-                drawGUIOverlay = original.drawGUIOverlay,
-                minifiedDef = original.minifiedDef,
-                thingCategories = original.thingCategories?.ToList(),
-            };
+            // Use MakeShallowCopy to copy all fields from original
+            ThingDef newDef = MakeShallowCopy(original);
+            
+            // Override specific properties
+            newDef.defName = newDefName;
+            newDef.label = newLabel;
+            newDef.description = newDescription;
+            newDef.thingClass = typeof(AdaptiveStorage.ThingClass);
+            newDef.surfaceType = SurfaceType.Item;
+            
+            // Copy graphic data (needs special handling)
+            newDef.graphicData = CopyGraphicData(original.graphicData);
+            
+            // Copy building properties
+            newDef.building = CopyBuildingProperties(original.building, config);
 
             // Setup building properties for storage
             newDef.building = CopyBuildingProperties(original.building, config);
@@ -273,12 +368,73 @@ namespace AsfFurnitureExt
             if (extensionType != null)
             {
                 DefModExtension extension = (DefModExtension)Activator.CreateInstance(extensionType);
+                
+                // Set labelFormat to "Default" (required by AdaptiveStorage)
+                var labelFormatField = extensionType.GetField("labelFormat");
+                if (labelFormatField != null)
+                {
+                    labelFormatField.SetValue(extension, "Default");
+                }
+                
                 newDef.modExtensions.Add(extension);
             }
 
             // Note: Don't call ResolveReferences() here - DefGenerator.AddImpliedDef will call PostLoad()
 
+            // Generate new Blueprint and Frame for the new ThingDef
+            // This must be done after setting thingClass to ensure they use the correct class
+            GenerateBlueprintAndFrame(newDef);
+
             return newDef;
+        }
+
+        private static void GenerateBlueprintAndFrame(ThingDef newDef)
+        {
+            try
+            {
+                // Get the NewBlueprintDef_Thing method via reflection
+                var newBlueprintDefMethod = typeof(ThingDefGenerator_Buildings).GetMethod("NewBlueprintDef_Thing", BindingFlags.Static | BindingFlags.NonPublic);
+                if (newBlueprintDefMethod != null)
+                {
+                    var blueprintDef = newBlueprintDefMethod.Invoke(null, new object[] { newDef, false, null, false }) as ThingDef;
+                    if (blueprintDef != null)
+                    {
+                        blueprintDef.shortHash = 0;
+                        DefGenerator.AddImpliedDef(blueprintDef, false);
+                    }
+                }
+
+                // Get the NewFrameDef_Thing method via reflection
+                var newFrameDefMethod = typeof(ThingDefGenerator_Buildings).GetMethod("NewFrameDef_Thing", BindingFlags.Static | BindingFlags.NonPublic);
+                if (newFrameDefMethod != null)
+                {
+                    var frameDef = newFrameDefMethod.Invoke(null, new object[] { newDef, false }) as ThingDef;
+                    if (frameDef != null)
+                    {
+                        frameDef.shortHash = 0;
+                        DefGenerator.AddImpliedDef(frameDef, false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[ASF Furniture Ext] Failed to generate blueprint/frame for {newDef.defName}: {ex}");
+            }
+        }
+
+        private static T MakeShallowCopy<T>(T from) where T : new()
+        {
+            var to = new T();
+            CopyFields(from, to);
+            return to;
+        }
+
+        private static void CopyFields<T>(T from, T to)
+        {
+            foreach (var fieldInfo in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                fieldInfo.SetValue(to, fieldInfo.GetValue(from));
+            }
         }
 
         private static List<StatModifier> CopyStatBases(List<StatModifier> original)
