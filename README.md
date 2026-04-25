@@ -1,0 +1,2 @@
+# ASF-Furniture-Extension
+一个尝试将Rimworld各种家具添加上存储功能的实验性Mod，还在研究中不一定可行
