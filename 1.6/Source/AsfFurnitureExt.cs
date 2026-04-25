@@ -15,13 +15,16 @@ namespace AsfFurnitureExt
         internal const string TranslationPrefix = "nzasf";
         internal const string NewDefPrefix = "Nz_ASFS_";
 
+        /// <summary>
+        /// 判断 ASF 是否已启用。
+        /// </summary>
         public static bool IsASFEnabled()
         {
             return ModLister.AllInstalledMods.Any(mod =>
                 mod.PackageId.ToString().ToLower().Contains("adaptive.storage.framework") && mod.Active);
         }
 
-        // Translation helpers
+        // 翻译辅助
         public static string LabelPrefix => $"{TranslationPrefix}.label_prefix".Translate();
         public static string DescSuffix(string key) => $"{TranslationPrefix}.{key}".Translate();
         public static string LogMessage(string key) => $"{TranslationPrefix}.{key}".Translate();
@@ -33,6 +36,9 @@ namespace AsfFurnitureExt
         public bool inited = false;
         public bool enabled = true;
 
+        /// <summary>
+        /// 读取或写入模组设置数据。
+        /// </summary>
         public override void ExposeData()
         {
             base.ExposeData();
@@ -45,6 +51,9 @@ namespace AsfFurnitureExt
             }
         }
 
+        /// <summary>
+        /// 初始化默认设置数据。
+        /// </summary>
         public void InitData()
         {
             Log.Message(DefValue.LogMessage("log_init"));
@@ -59,14 +68,23 @@ namespace AsfFurnitureExt
         public static AsfFurnitureExtSettings settings;
         public static AsfFurnitureExtMod Instance { get; private set; }
 
+        /// <summary>
+        /// 构造模组实例并加载设置。
+        /// </summary>
         public AsfFurnitureExtMod(ModContentPack content) : base(content)
         {
             settings = GetSettings<AsfFurnitureExtSettings>();
             Instance = this;
         }
 
+        /// <summary>
+        /// 返回设置界面名称。
+        /// </summary>
         public override string SettingsCategory() => "ASF Furniture Ext";
 
+        /// <summary>
+        /// 绘制设置窗口内容。
+        /// </summary>
         public override void DoSettingsWindowContents(Rect inRect)
         {
             base.DoSettingsWindowContents(inRect: inRect);
@@ -121,6 +139,9 @@ namespace AsfFurnitureExt
             "AdaptiveStorage"
         };
 
+        /// <summary>
+        /// 执行静态初始化并安排家具克隆流程。
+        /// </summary>
         static AsfFurniturePatcher()
         {
             Log.Message(DefValue.LogMessage("log_loaded"));
@@ -131,7 +152,7 @@ namespace AsfFurnitureExt
                 return;
             }
 
-            // Clone furniture after all defs are loaded
+            // 在所有定义加载完毕后克隆家具
             // 使用 ExecuteWhenFinished 确保在 XML 配置加载完成后再执行
             LongEventHandler.ExecuteWhenFinished(action: () =>
             {
@@ -167,6 +188,9 @@ namespace AsfFurnitureExt
             });
         }
 
+        /// <summary>
+        /// 按类型全名在 ASF 的已知程序集里解析类型。
+        /// </summary>
         private static Type ResolveAsfType(string fullTypeName)
         {
             foreach (string assemblyName in AsfAssemblyNames)
@@ -190,6 +214,9 @@ namespace AsfFurnitureExt
             return null;
         }
 
+        /// <summary>
+        /// 克隆原始家具并附加 ASF 储物功能。
+        /// </summary>
         private static void CloneFurnitureWithStorage(FurnitureCloneConfigDef config)
         {
             ThingDef originalDef = DefDatabase<ThingDef>.GetNamed(config.originalDefName, false);
@@ -199,33 +226,33 @@ namespace AsfFurnitureExt
                 return;
             }
 
-            // Generate new def name with prefix
+            // 使用前缀生成新的定义名称
             string newDefName = DefValue.NewDefPrefix + config.originalDefName;
 
             Log.Message($"[ASF Furniture Ext] Cloning {config.originalDefName} -> {newDefName}");
 
-            // Create new ThingDef by copying original
+            // 复制原始定义，生成新的 ThingDef
             ThingDef newDef = CopyThingDef(originalDef, config, newDefName);
 
-            // Set mod content pack
+            // 设置模组内容包
             newDef.modContentPack = AsfFurnitureExtMod.Instance.Content;
 
-            // Note: Temporarily disable designator dropdown to test material selection
-            // SetupDesignatorDropdown(originalDef, newDef);
+            // 注意：此处暂时禁用设计器下拉组，以便测试材质选择
+            // 暂时不启用设计器下拉组：SetupDesignatorDropdown(originalDef, newDef);
 
-            // Use DefGenerator to properly register the def (this calls PostLoad and other necessary initialization)
+            // 使用 DefGenerator 正确注册定义（这会触发 PostLoad 及其他必要初始化）
             DefGenerator.AddImpliedDef<ThingDef>(newDef, false);
 
-            // Also add to BuildableDef database for construction
+            // 同时加入 BuildableDef 数据库以用于建造
             if (!DefDatabase<BuildableDef>.AllDefs.Contains(newDef))
             {
                 DefDatabase<BuildableDef>.Add(newDef);
             }
 
-            // Register GraphicsDef for AdaptiveStorage
-            RegisterGraphicsDef(newDef, config);
+            // 为 AdaptiveStorage 注册 GraphicsDef
+            RegisterGraphicsDef(newDef);
 
-            // Re-resolve designation category to update build menu
+            // 重新解析指定类别以刷新建造菜单
             if (originalDef.designationCategory != null)
             {
                 originalDef.designationCategory.ResolveReferences();
@@ -234,9 +261,12 @@ namespace AsfFurnitureExt
             Log.Message(DefValue.LogMessage("log_cloning_success", newDefName));
         }
 
+        /// <summary>
+        /// 创建或同步设计器下拉分组。
+        /// </summary>
         private static void SetupDesignatorDropdown(ThingDef originalDef, ThingDef newDef)
         {
-            // Create or use existing dropdown group
+            // 创建或复用已有的下拉分组
             if (originalDef.designatorDropdown == null)
             {
                 var dropdown = new DesignatorDropdownGroupDef
@@ -244,7 +274,7 @@ namespace AsfFurnitureExt
                     defName = originalDef.defName + "_ASFS_Group"
                 };
                 
-                // Register the dropdown group def
+                // 注册下拉分组定义
                 dropdown.modContentPack = AsfFurnitureExtMod.Instance.Content;
                 DefGenerator.AddImpliedDef<DesignatorDropdownGroupDef>(dropdown, false);
                 
@@ -257,7 +287,11 @@ namespace AsfFurnitureExt
             }
         }
 
-        private static void RegisterGraphicsDef(ThingDef newDef, FurnitureCloneConfigDef config)
+        /// <summary>
+        /// 为新定义注册 ASF 的 GraphicsDef，并完成其初始化流程。
+        /// </summary>
+        /// <param name="newDef">要绑定 ASF 图形配置的新家具定义。</param>
+        private static void RegisterGraphicsDef(ThingDef newDef)
         {
             Type graphicsDefType = ResolveAsfType("AdaptiveStorage.GraphicsDef");
             if (graphicsDefType == null)
@@ -268,14 +302,14 @@ namespace AsfFurnitureExt
 
             try
             {
+                // 创建 ASF 的 GraphicsDef 实例。
                 var graphicsDef = (Def)Activator.CreateInstance(graphicsDefType);
 
+                // 写入定义名和模组来源。
                 graphicsDefType.GetField("defName")?.SetValue(graphicsDef, newDef.defName + "_Graphics");
                 graphicsDefType.GetProperty("modContentPack")?.SetValue(graphicsDef, AsfFurnitureExtMod.Instance.Content);
 
-                // Point this GraphicsDef at our cloned ThingDef so Initialize() can
-                // auto-create a StorageGraphic from newDef.graphicData and populate
-                // GraphicsDef.Database[newDef].
+                // 将新家具作为目标定义挂到 GraphicsDef 上。
                 var targetDefsField = graphicsDefType.GetField("targetDefs");
                 if (targetDefsField != null)
                 {
@@ -288,38 +322,22 @@ namespace AsfFurnitureExt
                     targetDefs.GetType().GetMethod("Add")?.Invoke(targetDefs, new object[] { newDef });
                 }
 
+                // 让 ASF 在渲染储物内容时始终显示内容层。
                 graphicsDefType.GetField("showContainedItems")?.SetValue(graphicsDef, true);
 
-                // CRITICAL: Must use the correct generic type (GraphicsDef, not Def) so the def is
-                // registered in DefDatabase<GraphicsDef>. ASF's PlayDataLoadingFinished (postfix on
-                // PlayDataLoader.ResetStaticDataPost) clears GraphicsDef.Database and repopulates it
-                // by iterating DefDatabase<GraphicsDef>. If we call DefGenerator.AddImpliedDef with
-                // a compile-time type of Def, it goes into DefDatabase<Def> instead, and our entry
-                // is lost after every save-load cycle (causing the null CurrentGraphic crash).
+                // 通过泛型反射把 GraphicsDef 注册进正确的 DefDatabase。
                 var addImpliedDefMethod = typeof(DefGenerator)
                     .GetMethods(BindingFlags.Static | BindingFlags.Public)
                     .FirstOrDefault(m => m.Name == "AddImpliedDef" && m.IsGenericMethodDefinition);
-                if (addImpliedDefMethod != null)
+                if (addImpliedDefMethod == null)
                 {
-                    addImpliedDefMethod.MakeGenericMethod(graphicsDefType)
-                        .Invoke(null, new object[] { graphicsDef, false });
-                }
-                else
-                {
-                    // Fallback: add directly to DefDatabase<GraphicsDef>
-                    Log.Warning("[ASF Furniture Ext] DefGenerator.AddImpliedDef not found; using DefDatabase.Add fallback");
-                    typeof(DefDatabase<>).MakeGenericType(graphicsDefType)
-                        .GetMethod("Add", BindingFlags.Static | BindingFlags.Public, null,
-                            new[] { graphicsDefType }, null)
-                        ?.Invoke(null, new object[] { graphicsDef });
+                    throw new MissingMethodException("DefGenerator", "AddImpliedDef");
                 }
 
-                // ResolveReferences() MUST be called before Initialize() because
-                // Initialize() → UpdateActiveLabelStyle() → ContentsFullyHidden reads
-                // allowedFilter, which is only created inside ResolveReferences().
-                // Without this, Initialize() throws a NullReferenceException (caught
-                // silently), StorageGraphic._worker is never set, CurrentGraphic stays
-                // null, and UpdateBuildingGraphicAtIndex crashes at line 397 every frame.
+                addImpliedDefMethod.MakeGenericMethod(graphicsDefType)
+                    .Invoke(null, new object[] { graphicsDef, false });
+
+                // 先解析引用，再执行 ASF 的初始化。
                 graphicsDefType.GetMethod("ResolveReferences",
                     BindingFlags.Instance | BindingFlags.Public)?
                     .Invoke(graphicsDef, null);
@@ -328,6 +346,7 @@ namespace AsfFurnitureExt
                     BindingFlags.Instance | BindingFlags.Public)?
                     .Invoke(graphicsDef, null);
 
+                // 记录注册结果，便于日志排查。
                 Log.Message($"[ASF Furniture Ext] Registered GraphicsDef for {newDef.defName}");
             }
             catch (Exception ex)
@@ -336,57 +355,60 @@ namespace AsfFurnitureExt
             }
         }
 
+        /// <summary>
+        /// 复制原始 ThingDef 并应用本模组的储物配置。
+        /// </summary>
         private static ThingDef CopyThingDef(ThingDef original, FurnitureCloneConfigDef config, string newDefName)
         {
-            // Generate label with prefix
+            // 使用前缀生成名称标签
             string newLabel = DefValue.LabelPrefix + original.label;
 
-            // Generate description with suffix
+            // 使用后缀生成说明文本
             string descriptionSuffix = DefValue.DescSuffix(config.descriptionSuffixKey);
             string newDescription = original.description + descriptionSuffix;
 
-            // Use MakeShallowCopy to copy all fields from original
+            // 使用 MakeShallowCopy 复制原始对象的字段
             ThingDef newDef = MakeShallowCopy(original);
             
-            // Override specific properties
+            // 覆盖特定属性
             newDef.defName = newDefName;
             newDef.label = newLabel;
             newDef.description = newDescription;
             newDef.thingClass = typeof(AdaptiveStorage.ThingClass);
             newDef.surfaceType = SurfaceType.Item;
             
-            // Copy graphic data (needs special handling)
+            // 复制图形数据（需要特殊处理）
             newDef.graphicData = CopyGraphicData(original.graphicData);
             
-            // Copy building properties
+            // 复制建筑属性
             newDef.building = CopyBuildingProperties(original.building, config);
 
-            // Setup building properties for storage
+            // 为储物功能再次设置建筑属性
             newDef.building = CopyBuildingProperties(original.building, config);
 
-            // Setup inspector tabs
+            // 设置检查面板标签
             newDef.inspectorTabs = new List<Type>();
             if (original.inspectorTabs != null)
             {
                 newDef.inspectorTabs.AddRange(original.inspectorTabs);
             }
-            // Add storage tab if not already present
+            // 如果尚未存在，则添加储物标签页
             if (!newDef.inspectorTabs.Contains(typeof(ITab_Storage)))
             {
                 newDef.inspectorTabs.Add(typeof(ITab_Storage));
             }
 
-            // Add mod extension for AdaptiveStorage
+            // 添加 AdaptiveStorage 的模组扩展
             if (newDef.modExtensions == null)
                 newDef.modExtensions = new List<DefModExtension>();
 
-            // Create AdaptiveStorage extension via reflection
+            // 通过反射创建 AdaptiveStorage 扩展
             Type extensionType = ResolveAsfType("AdaptiveStorage.Extension");
             if (extensionType != null)
             {
                 DefModExtension extension = (DefModExtension)Activator.CreateInstance(extensionType);
                 
-                // Set labelFormat to Default using the field's actual enum type.
+                // 使用字段的真实枚举类型把 labelFormat 设为 Default
                 var labelFormatField = extensionType.GetField("labelFormat");
                 if (labelFormatField != null)
                 {
@@ -397,20 +419,23 @@ namespace AsfFurnitureExt
                 newDef.modExtensions.Add(extension);
             }
 
-            // Note: Don't call ResolveReferences() here - DefGenerator.AddImpliedDef will call PostLoad()
+            // 注意：这里不要调用 ResolveReferences()，DefGenerator.AddImpliedDef 会触发 PostLoad()
 
-            // Generate new Blueprint and Frame for the new ThingDef
-            // This must be done after setting thingClass to ensure they use the correct class
+            // 为新的 ThingDef 生成蓝图和框架
+            // 必须在设置 thingClass 之后执行，确保它们使用正确的类
             GenerateBlueprintAndFrame(newDef);
 
             return newDef;
         }
 
+        /// <summary>
+        /// 为新定义生成蓝图和框架定义。
+        /// </summary>
         private static void GenerateBlueprintAndFrame(ThingDef newDef)
         {
             try
             {
-                // Get the NewBlueprintDef_Thing method via reflection
+                // 通过反射获取 NewBlueprintDef_Thing 方法
                 var newBlueprintDefMethod = typeof(ThingDefGenerator_Buildings).GetMethod("NewBlueprintDef_Thing", BindingFlags.Static | BindingFlags.NonPublic);
                 if (newBlueprintDefMethod != null)
                 {
@@ -422,7 +447,7 @@ namespace AsfFurnitureExt
                     }
                 }
 
-                // Get the NewFrameDef_Thing method via reflection
+                // 通过反射获取 NewFrameDef_Thing 方法
                 var newFrameDefMethod = typeof(ThingDefGenerator_Buildings).GetMethod("NewFrameDef_Thing", BindingFlags.Static | BindingFlags.NonPublic);
                 if (newFrameDefMethod != null)
                 {
@@ -440,6 +465,9 @@ namespace AsfFurnitureExt
             }
         }
 
+        /// <summary>
+        /// 使用浅拷贝方式复制对象字段。
+        /// </summary>
         private static T MakeShallowCopy<T>(T from) where T : new()
         {
             var to = new T();
@@ -447,6 +475,9 @@ namespace AsfFurnitureExt
             return to;
         }
 
+        /// <summary>
+        /// 复制指定类型的所有实例字段。
+        /// </summary>
         private static void CopyFields<T>(T from, T to)
         {
             foreach (var fieldInfo in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
@@ -455,6 +486,9 @@ namespace AsfFurnitureExt
             }
         }
 
+        /// <summary>
+        /// 复制数值修正列表。
+        /// </summary>
         private static List<StatModifier> CopyStatBases(List<StatModifier> original)
         {
             if (original == null) return null;
@@ -471,6 +505,9 @@ namespace AsfFurnitureExt
             return copy;
         }
 
+        /// <summary>
+        /// 复制图形数据对象。
+        /// </summary>
         private static GraphicData CopyGraphicData(GraphicData original)
         {
             if (original == null) return null;
@@ -495,6 +532,9 @@ namespace AsfFurnitureExt
             };
         }
 
+        /// <summary>
+        /// 复制组件属性列表。
+        /// </summary>
         private static List<CompProperties> CopyComps(List<CompProperties> original)
         {
             if (original == null) return new List<CompProperties>();
@@ -502,7 +542,7 @@ namespace AsfFurnitureExt
             List<CompProperties> copy = new List<CompProperties>();
             foreach (var comp in original)
             {
-                // Deep copy comp properties
+                // 深拷贝组件属性
                 CompProperties copiedComp = CopyCompProperties(comp);
                 if (copiedComp != null)
                 {
@@ -512,16 +552,18 @@ namespace AsfFurnitureExt
             return copy;
         }
 
+        /// <summary>
+        /// 复制单个组件属性对象。
+        /// </summary>
         private static CompProperties CopyCompProperties(CompProperties original)
         {
             if (original == null) return null;
 
-            // Create a new instance of the same type
+            // 创建同类型的新实例
             try
             {
                 var copy = (CompProperties)Activator.CreateInstance(original.GetType());
-                // Copy fields using reflection or manual assignment
-                // For now, return the original to avoid issues
+                // 这里保留原始行为，避免组件属性复制不完整导致异常
                 return original;
             }
             catch
@@ -530,11 +572,14 @@ namespace AsfFurnitureExt
             }
         }
 
+        /// <summary>
+        /// 复制建筑属性并注入储物设置。
+        /// </summary>
         private static BuildingProperties CopyBuildingProperties(BuildingProperties original, FurnitureCloneConfigDef config)
         {
             BuildingProperties copy = new BuildingProperties
             {
-                // Storage settings
+                // 储物设置
                 preventDeteriorationOnTop = true,
                 ignoreStoredThingsBeauty = true,
                 maxItemsInCell = config.maxItemsInCell,
@@ -542,7 +587,7 @@ namespace AsfFurnitureExt
                 paintable = original?.paintable ?? true,
                 storageGroupTag = "Shelf",
 
-                // Copy other building properties
+                // 复制其他建筑属性
                 buildingTags = original?.buildingTags?.ToList(),
                 ai_chillDestination = original?.ai_chillDestination ?? false,
                 allowAutoroof = original?.allowAutoroof ?? true,
@@ -558,19 +603,22 @@ namespace AsfFurnitureExt
                 wantsHopperAdjacent = original?.wantsHopperAdjacent ?? false,
             };
 
-            // Setup storage settings
+            // 配置储物设置
             copy.fixedStorageSettings = CreateStorageSettings(config);
             copy.defaultStorageSettings = CreateDefaultStorageSettings(config);
 
             return copy;
         }
 
+        /// <summary>
+        /// 根据配置创建固定储物设置。
+        /// </summary>
         private static StorageSettings CreateStorageSettings(FurnitureCloneConfigDef config)
         {
             StorageSettings settings = new StorageSettings();
             settings.filter = new ThingFilter();
 
-            // Allow categories
+            // 允许的类别
             if (config.storageFilterCategories != null)
             {
                 foreach (string categoryName in config.storageFilterCategories)
@@ -583,7 +631,7 @@ namespace AsfFurnitureExt
                 }
             }
 
-            // Disallow specific things
+            // 禁止的具体物品
             if (config.storageDisallowedThingDefs != null)
             {
                 foreach (string thingDefName in config.storageDisallowedThingDefs)
@@ -599,6 +647,9 @@ namespace AsfFurnitureExt
             return settings;
         }
 
+        /// <summary>
+        /// 根据配置创建默认储物设置。
+        /// </summary>
         private static StorageSettings CreateDefaultStorageSettings(FurnitureCloneConfigDef config)
         {
             StorageSettings settings = new StorageSettings
@@ -607,7 +658,7 @@ namespace AsfFurnitureExt
             };
             settings.filter = new ThingFilter();
 
-            // Default to first category
+            // 默认使用第一个类别
             if (config.storageFilterCategories != null && config.storageFilterCategories.Count > 0)
             {
                 ThingCategoryDef categoryDef = DefDatabase<ThingCategoryDef>.GetNamed(config.storageFilterCategories[0], false);
