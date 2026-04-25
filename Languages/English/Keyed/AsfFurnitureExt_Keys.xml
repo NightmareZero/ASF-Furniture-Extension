@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- Prefix for cloned furniture labels -->
+    <nzasf.label_prefix>storage </nzasf.label_prefix>
+
+    <!-- Description suffixes -->
+    <nzasf.desc_suffix> with storage compartments. </nzasf.desc_suffix>
+    <nzasf.desc_suffix_drawer> with functional drawers for storage. </nzasf.desc_suffix_drawer>
+
+    <!-- Settings -->
+    <nzasf.settings_enable>Enable Storage Furniture</nzasf.settings_enable>
+    <nzasf.settings_enable_desc>Enable storage functionality for cloned furniture</nzasf.settings_enable_desc>
+    <nzasf.asf_detected>Adaptive Storage Framework: Detected</nzasf.asf_detected>
+    <nzasf.asf_not_detected>Adaptive Storage Framework: NOT DETECTED - Mod will not work!</nzasf.asf_not_detected>
+    <nzasf.cloned_furniture>Cloned furniture:</nzasf.cloned_furniture>
+
+    <!-- Log messages -->
+    <nzasf.log_init>ASF Furniture Extension: InitData</nzasf.log_init>
+    <nzasf.log_loaded>ASF Furniture Extension: Loaded successfully!</nzasf.log_loaded>
+    <nzasf.log_asf_missing>ASF Furniture Extension: Adaptive Storage Framework not detected! Please install ASF.</nzasf.log_asf_missing>
+    <nzasf.log_cloning_start>ASF Furniture Extension: Cloning furniture with storage...</nzasf.log_cloning_start>
+    <nzasf.log_cloning_complete>ASF Furniture Extension: Cloning complete</nzasf.log_cloning_complete>
+    <nzasf.log_cloning_disabled>ASF Furniture Extension: Cloning disabled in settings</nzasf.log_cloning_disabled>
+    <nzasf.log_cloning_original_not_found>ASF Furniture Extension: Could not find original def {0}</nzasf.log_cloning_original_not_found>
+    <nzasf.log_cloning_success>ASF Furniture Extension: Successfully created {0}</nzasf.log_cloning_success>
+    <nzasf.log_cloning_failed>ASF Furniture Extension: Failed to clone {0}: {1}</nzasf.log_cloning_failed>
+</LanguageData>

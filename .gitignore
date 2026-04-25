@@ -1,0 +1,16 @@
+/.vscode/obj
+/*.sln 
+
+# /*/Assemblies
+/1.5/Assemblies/*.pdb
+/1.5/obj
+
+/1.6/Assemblies/*.dll
+/1.6/Assemblies/*.pdb
+/1.6/obj
+
+
+
+# /.vscode
+# /Source
+

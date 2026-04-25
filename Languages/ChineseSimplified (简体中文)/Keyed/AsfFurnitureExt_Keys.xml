@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+    <!-- 克隆家具名称前缀 -->
+    <nzasf.label_prefix>储物</nzasf.label_prefix>
+
+    <!-- 描述后缀 -->
+    <nzasf.desc_suffix>，带有储物空间。</nzasf.desc_suffix>
+    <nzasf.desc_suffix_drawer>，带有功能性抽屉用于存储。</nzasf.desc_suffix_drawer>
+
+    <!-- 设置 -->
+    <nzasf.settings_enable>启用储物家具</nzasf.settings_enable>
+    <nzasf.settings_enable_desc>为克隆的家具启用储物功能</nzasf.settings_enable_desc>
+    <nzasf.asf_detected>自适应存储框架: 已检测到</nzasf.asf_detected>
+    <nzasf.asf_not_detected>自适应存储框架: 未检测到 - Mod将无法工作!</nzasf.asf_not_detected>
+    <nzasf.cloned_furniture>克隆的家具:</nzasf.cloned_furniture>
+
+    <!-- 日志消息 -->
+    <nzasf.log_init>ASF家具扩展: 初始化数据</nzasf.log_init>
+    <nzasf.log_loaded>ASF家具扩展: 加载成功!</nzasf.log_loaded>
+    <nzasf.log_asf_missing>ASF家具扩展: 未检测到自适应存储框架!请安装ASF。</nzasf.log_asf_missing>
+    <nzasf.log_cloning_start>ASF家具扩展: 开始克隆带储物功能的家具...</nzasf.log_cloning_start>
+    <nzasf.log_cloning_complete>ASF家具扩展: 克隆完成</nzasf.log_cloning_complete>
+    <nzasf.log_cloning_disabled>ASF家具扩展: 克隆功能在设置中已禁用</nzasf.log_cloning_disabled>
+    <nzasf.log_cloning_original_not_found>ASF家具扩展: 找不到原始定义 {0}</nzasf.log_cloning_original_not_found>
+    <nzasf.log_cloning_success>ASF家具扩展: 成功创建 {0}</nzasf.log_cloning_success>
+    <nzasf.log_cloning_failed>ASF家具扩展: 克隆 {0} 失败: {1}</nzasf.log_cloning_failed>
+</LanguageData>

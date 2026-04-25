@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+    <!-- 储物床头柜配置 -->
+    <AsfFurnitureExt.Def_FurnitureCloneConfig>
+        <defName>Nz_ASFS_EndTable</defName>
+        <originalDefName>EndTable</originalDefName>
+        <maxItemsInCell>1</maxItemsInCell>
+        <storageFilterCategories>
+            <li>Medicine</li>
+            <li>Drugs</li>
+            <li>Foods</li>
+        </storageFilterCategories>
+        <storageDisallowedThingDefs>
+            <li>MealSimple</li>
+            <li>MealFine</li>
+            <li>MealLavish</li>
+            <li>MealSurvivalPack</li>
+            <li>MealNutrientPaste</li>
+            <li>Pemmican</li>
+        </storageDisallowedThingDefs>
+        <descriptionSuffixKey>desc_suffix</descriptionSuffixKey>
+        <enabled>true</enabled>
+    </AsfFurnitureExt.Def_FurnitureCloneConfig>
+
+    <!-- 储物梳妆台配置 -->
+    <AsfFurnitureExt.Def_FurnitureCloneConfig>
+        <defName>Nz_ASFS_Dresser</defName>
+        <originalDefName>Dresser</originalDefName>
+        <maxItemsInCell>5</maxItemsInCell>
+        <storageFilterCategories>
+            <li>Apparel</li>
+            <li>Weapons</li>
+            <li>Medicine</li>
+            <li>Drugs</li>
+            <li>Foods</li>
+        </storageFilterCategories>
+        <storageDisallowedThingDefs>
+            <li>MealSimple</li>
+            <li>MealFine</li>
+            <li>MealLavish</li>
+            <li>MealSurvivalPack</li>
+            <li>MealNutrientPaste</li>
+            <li>Pemmican</li>
+        </storageDisallowedThingDefs>
+        <descriptionSuffixKey>desc_suffix_drawer</descriptionSuffixKey>
+        <enabled>true</enabled>
+    </AsfFurnitureExt.Def_FurnitureCloneConfig>
+
+</Defs>
